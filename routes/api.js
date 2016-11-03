@@ -61,17 +61,19 @@ router.route("/users/")
 })
 //get user list
 .get(function(request,response){
-	new sql
-	.Request()
-	.query("SELECT id,username,timestamp FROM users")
-	.then(function(result){
-		response.send({
-			"message":"Successfully retrieve user list".
-			"result":result
-		})
-	}).catch(function(reason){
-		response.status(500).send({
-			error : reason
+	DBConnection.then(function(sql){
+		new sql
+		.Request()
+		.query("SELECT id,username,timestamp FROM users")
+		.then(function(result){
+			response.send({
+				"message":"Successfully retrieve user list",
+				"result":result
+			})
+		}).catch(function(reason){
+			response.status(500).send({
+				error : reason
+			})
 		})
 	})
 })
@@ -80,29 +82,31 @@ router.route("/users/")
 router.route("/users/:id")
 //get single user
 .get(function(request,response){
-	var userId = request.params.id
-	new sql
-	.Request()
-	.input("id",id)
-	.query("SELECT id,username,timestamp FROM users WHERE id=@id")
-	.then(function(result){
-		if(result.length){
-			var realUser = result[0]
-			response.send({
-				"message":"Successfully retrieve user".
-				"result":result
-			})	
-		}else{
-			response.status(404).send({
-				error : "User not found!"
+	DBConnection.then(function(sql){
+		var userId = request.params.id
+		new sql
+		.Request()
+		.input("id",id)
+		.query("SELECT id,username,timestamp FROM users WHERE id=@id")
+		.then(function(result){
+			if(result.length){
+				var realUser = result[0]
+				response.send({
+					"message":"Successfully retrieve user",
+					"result":result
+				})	
+			}else{
+				response.status(404).send({
+					error : "User not found!"
+				})
+			}
+			
+		}).catch(function(reason){
+			response.status(500).send({
+				error : reason
 			})
-		}
-		
-	}).catch(function(reason){
-		response.status(500).send({
-			error : reason
 		})
-	})
+	})	
 })
 // edit existing user
 .post(function(request,response){
@@ -117,67 +121,87 @@ router.route("/users/login")
 	var username = request.body.username;
 	var password = request.body.password
 	var hashedPassword = md5(password)
-	new sql
-	.Request()
-	.input("username",username)
-	.input("password",hashedPassword)
-	.query("SELECT id,username,timestamp FROM users WHERE username=@username AND password@=password")
-	.then(function(result){
-		if(result.length){
-			var realUser = result[0]
-			response.send({
-				"message":"Successfully create user",
-				"result":realUser
-			})	
-		}else{
-			response.status(404).send({
-				error : "User not found!"
+	DBConnection.then(function(sql){
+		new sql
+		.Request()
+		.input("username",username)
+		.input("password",hashedPassword)
+		.query("SELECT id,username,timestamp FROM users WHERE username=@username AND password@=password")
+		.then(function(result){
+			if(result.length){
+				var realUser = result[0]
+				response.send({
+					"message":"Successfully create user",
+					"result":realUser
+				})	
+			}else{
+				response.status(404).send({
+					error : "User not found!"
+				})
+			}
+			
+		}).catch(function(reason){
+			response.status(500).send({
+				error : reason
 			})
-		}
-		
-	}).catch(function(reason){
-		response.status(500).send({
-			error : reason
-		})
-	})	
+		})		
+	})
+	
 })
 
 router.route("/rooms/")
 .get(function(request,response){
-	new sql
-	.Request()
-	.input("id",id)
-	.query("SELECT id,username,timestamp FROM rooms")
-	.then(function(result){
-		response.send({
-			message : "Successfully retrieve rooms",
-			result : result
-		})
-	}).catch(function(reason){
-		response.status(500).send({
-			error : reason
-		})
+	DBConnection.then(function(sql){
+		new sql
+		.Request()
+		.query("SELECT id,room_name,timestamp FROM rooms")
+		.then(function(result){
+			response.send({
+				message : "Successfully retrieve rooms",
+				result : result
+			})
+		}).catch(function(reason){
+			response.status(500).send({
+				error : reason
+			})
+		})	
 	})
+	
 })
 .post(function(request,response){
 	var roomName = request.body.roomName
-	new sql
-	.Request()
-	.input("room_name",roomName)
-	.query("INSERT INTO rooms (room_name) VALUES (@room_name)")
-	.then(function(){
+	console.log(">",roomName)
+	DBConnection.then(function(sql){
 		return new sql
-			.Request()
-			.query("SELECT (id,room_name) FROM rooms WHERE room_name=@room_name")
-			.then(function(result){
-				if(result.length){
-					var realRoom = result[0]
-					response.send({
-						message : "Successfully create room",
-						result : realRoom
-					})
-				}
-			})
+		.Request()
+		.input("room_name",roomName)
+		.query("INSERT INTO rooms (room_name) VALUES (@room_name)")
+		.then(function(){
+			console.log("OK")
+			return new sql
+				.Request()
+				.input("room_name",roomName)
+				.query("SELECT id,room_name FROM rooms WHERE room_name=@room_name")
+				.then(function(result){
+					console.log(result)
+					if(result.length){
+						var realRoom = result[0]
+						response.send({
+							message : "Successfully create room",
+							result : realRoom
+						})
+					}else{
+						response.status(404).send({
+							error : "Room not found!"
+						})
+					}
+				}).catch(function(reason){
+					console.log(reason)
+				})
+
+		}).catch(function(reason){
+			console.log(reason)
+		})	
 	})
 	.catch(function(reason){
 		response.status(500).send({
@@ -193,43 +217,47 @@ router.route("/rooms/:id")
 })
 .get(function(request,response){
 	var id = request.params.id
-	new sql
-	.Request()
-	.input("id",id)
-	.query("SELECT id,room_name FROM users WHERE id=@id")
-	.then(function(result){
-		if(result.length){
-			var realUser = result[0]
-			response.send({
-				"message":"Successfully retrieve room".
-				"result":result
-			})	
-		}else{
-			response.status(404).send({
-				error : "Room not found!"
-			})
-		}
-		
+	DBConnection.then(function(){
+		return new sql
+		.Request()
+		.input("id",id)
+		.query("SELECT id,room_name FROM users WHERE id=@id")
+		.then(function(result){
+			if(result.length){
+				var realUser = result[0]
+				response.send({
+					"message":"Successfully retrieve room",
+					"result":result
+				})	
+			}else{
+				response.status(404).send({
+					error : "Room not found!"
+				})
+			}
+			
+		})
 	}).catch(function(reason){
 		response.status(500).send({
 			error : reason
 		})
-	})
+	})		
 })
 
 router.route("/rooms/:id/users")
 .get(function(request,response){
 	var id = request.params.id
-	new sql
-	.Request()
-	.input("id","id")
-	.query("SELECT * FROM room_user INNER JOIN users ON room_user.user_id = users.id WHERE room_user.room_id=@id")
-	.then(function(result){
-		response.send({
-			message : "Successfully retrieve user list",
-			result : result
-		})
-	})
+	DBConnection.then(function(sql){
+		return new sql
+		.Request()
+		.input("id","id")
+		.query("SELECT * FROM room_user INNER JOIN users ON room_user.user_id = users.id WHERE room_user.room_id=@id")
+		.then(function(result){
+			response.send({
+				message : "Successfully retrieve user list",
+				result : result
+			})
+		})	
+	})	
 	.catch(function(reason){
 		response.status(500).send({
 			error : reason
@@ -248,16 +276,18 @@ router.route("/rooms/:room_id/users/:user_id")
 .put(function(request,response){
 	var roomId = request.params.room_id
 	var userId = request.params.user_id
-	new sql
-	.Request()
-	.input("room_id",roomId)
-	input("user_id",userId)
-	.query("INSERT INTO room_user (room_id,user_id) VALUES (@room_id,@user_id)")
-	.then(function(){
-		response.send({
-			result : "OK"
+	DBConnection.then(function(sql){
+		return new sql
+		.Request()
+		.input("room_id",roomId)
+		input("user_id",userId)
+		.query("INSERT INTO room_user (room_id,user_id) VALUES (@room_id,@user_id)")
+		.then(function(){
+			response.send({
+				result : "OK"
+			})
 		})
-	})
+	})	
 	.catch(function(reason){
 		response.status(500).send({
 			error : reason
@@ -267,16 +297,18 @@ router.route("/rooms/:room_id/users/:user_id")
 .delete(function(){
 	var roomId = request.params.room_id
 	var userId = request.params.user_id
-	new sql
-	.Request()
-	.input("room_id",roomId)
-	input("user_id",userId)
-	.query("DELETE FROM room_user WHERE room_id=@room_id AND user_id=@user_id")
-	.then(function(){
-		response.send({
-			result : "OK"
+	DBConnection.then(function(){
+		return new sql
+		.Request()
+		.input("room_id",roomId)
+		input("user_id",userId)
+		.query("DELETE FROM room_user WHERE room_id=@room_id AND user_id=@user_id")
+		.then(function(){
+			response.send({
+				result : "OK"
+			})
 		})
-	})
+	})	
 	.catch(function(reason){
 		response.status(500).send({
 			error : reason
