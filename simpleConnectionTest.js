@@ -2,7 +2,7 @@ var DBConnection = require("./libs/DBConnection")
 DBConnection.then(function(sql){
 	new sql
 		.Request()
-		.query("INSERT INTO users (username,password) VALUES (''test,''test) ")
+		.query("SELECT * FROM users ")
 		.then(function(result){
 			console.log("Success",result)
 		})

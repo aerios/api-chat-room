@@ -29,8 +29,8 @@ router.route("/users/")
 			if(!isExist){
 				new sql
 					.Request()
-					.input("username",username)
-					.input("password",hashedPassword)
+					.input("username",sql.VarChar(255),username)
+					.input("password",sql.VarChar(255),hashedPassword)
 					.query("INSERT INTO users (username,password) VALUES(@username,@password)")
 					.then(function(){
 						return new sql
@@ -110,42 +110,41 @@ router.route("/users/:id")
 })
 // edit existing user
 .post(function(request,response){
-	response.status(501).send({
-		"error":"Endpoint not implemented"
-	})
-})
-
-router.route("/users/login")
-//try to authenticate user
-.post(function(request,response){
-	var username = request.body.username;
-	var password = request.body.password
-	var hashedPassword = md5(password)
-	DBConnection.then(function(sql){
-		new sql
-		.Request()
-		.input("username",username)
-		.input("password",hashedPassword)
-		.query("SELECT id,username,timestamp FROM users WHERE username=@username AND password@=password")
-		.then(function(result){
-			if(result.length){
-				var realUser = result[0]
-				response.send({
-					"message":"Successfully create user",
-					"result":realUser
-				})	
-			}else{
-				response.status(404).send({
-					error : "User not found!"
+	var id = request.params.id
+	if(id == "login"){
+		var username = request.body.username;
+		var password = request.body.password
+		var hashedPassword = md5(password)
+		DBConnection.then(function(sql){
+			new sql
+			.Request()
+			.input("username",username)
+			.input("password",hashedPassword)
+			.query("SELECT id,username,timestamp FROM users WHERE username=@username AND password=@password")
+			.then(function(result){
+				if(result.length){
+					var realUser = result[0]
+					response.send({
+						"message":"Successfully create user",
+						"result":realUser
+					})	
+				}else{
+					response.status(404).send({
+						error : "User not found!"
+					})
+				}
+				
+			}).catch(function(reason){
+				response.status(500).send({
+					error : reason
 				})
-			}
-			
-		}).catch(function(reason){
-			response.status(500).send({
-				error : reason
-			})
-		})		
-	})
+			})		
+		})
+	}else{
+		response.status(501).send({
+			"error":"Endpoint not implemented"
+		})	
+	}
 	
 })
 
